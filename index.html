@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CronoTools - Editor Immagini & Tool Online</title>
+    <link rel="stylesheet" href="css/style.css">
+    <meta name="description" content="Suite di strumenti online gratuiti per editare immagini, convertire file e altro ancora. Tutto nel browser, 100% privacy.">
+    <style>
+        .hero { text-align: center; padding: 40px 20px 60px; }
+        .hero h1 { font-size: 48px; font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 20px; color: var(--text-secondary); max-width: 600px; margin: 0 auto 40px; }
+        
+        .cta-big {
+            display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+            background: var(--accent); color: var(--on-accent);
+            padding: 20px 40px; border-radius: 99px;
+            font-size: 20px; font-weight: 700; text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: var(--shadow-lg);
+        }
+        .cta-big:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .cta-big svg { width: 28px; height: 28px; }
+
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; margin-top: 60px; }
+        .tool-card {
+            background: var(--bg-glass); border: 1px solid var(--separator);
+            border-radius: 24px; padding: 24px; text-align: center; text-decoration: none; color: var(--text-primary);
+            transition: all 0.3s ease; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px;
+        }
+        .tool-card:hover { transform: translateY(-4px); background: var(--bg-secondary); border-color: var(--accent); box-shadow: var(--shadow-md); }
+        .tool-icon { width: 48px; height: 48px; margin-bottom: 16px; color: var(--accent); opacity: 0.9; }
+        .tool-title { font-weight: 600; font-size: 17px; }
+        
+        .beta-badge { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 700; background: var(--accent); color: white; padding: 2px 6px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <crono-navbar></crono-navbar>
+
+    <div class="content-wrapper">
+        <section class="hero">
+            <h1>Crea, Modifica, Converti.</h1>
+            <p>La suite definitiva per le tue immagini. Potente, gratuita e interamente nel tuo browser.</p>
+            
+            <a href="base64/index.html" class="cta-big">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                Vai al Convertitore
+            </a>
+        </section>
+
+        <section>
+            <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 20px; padding-left: 4px;">Tutti gli strumenti</h2>
+            <div class="tools-grid">
+                
+                <a href="filtri/index.html" class="tool-card">
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83m13.79-4l-5.74 9.94"/></svg>
+                    <span class="tool-title">Filtri</span>
+                </a>
+
+                <a href="crop-immagini/index.html" class="tool-card">
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path></svg>
+                    <span class="tool-title">Ritaglia</span>
+                </a>
+
+                <a href="ridimensiona/index.html" class="tool-card">
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    <span class="tool-title">Resize</span>
+                </a>
+
+                <a href="flip-immagini/index.html" class="tool-card">
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline></svg>
+                    <span class="tool-title">Specchia</span>
+                </a>
+                
+                <a href="ruota-immagini/index.html" class="tool-card">
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span class="tool-title">Ruota</span>
+                </a>
+
+                <a href="qr/index.html" class="tool-card">
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span class="tool-title">QR Code</span>
+                </a>
+
+                <a href="#" class="tool-card" style="opacity: 0.7; cursor: default;">
+                    <div class="beta-badge">SOON</div>
+                    <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                    <span class="tool-title">AI Remove BG</span>
+                </a>
+
+            </div>
+        </section>
+    </div>
+
+    <script src="js/ui.js"></script>
+    <script src="components/navbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Convertitore Universale - CronoTools</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .output-box { width: 100%; height: 200px; background: var(--bg-tertiary); border: 1px solid var(--separator); border-radius: 12px; padding: 16px; font-family: monospace; font-size: 13px; resize: vertical; color: var(--text-primary); margin-bottom: 16px; }
+        .format-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .format-opt { background: var(--bg-tertiary); border: 2px solid transparent; padding: 12px; border-radius: 12px; text-align: center; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .format-opt.active { background: var(--bg-secondary); border-color: var(--accent); color: var(--accent); }
+        .format-opt:hover { background: var(--bg-secondary); }
+    </style>
+</head>
+<body>
+    <crono-navbar></crono-navbar>
+
+    <div class="content-wrapper">
+        <header class="main-header">
+            <h1>Convertitore</h1>
+            <p class="description">Converti le tue immagini in qualsiasi formato. Semplice, veloce e gratuito.</p>
+        </header>
+
+        <main>
+            <div class="glass-card" style="padding: 24px;">
+                <h3 style="margin-bottom: 16px; font-size: 16px; text-transform: uppercase; color: var(--text-secondary);">Seleziona Formato di Uscita</h3>
+                
+                <div class="format-grid">
+                    <div class="format-opt active" onclick="selectFormat(this, 'image/png', 'PNG')">PNG</div>
+                    <div class="format-opt" onclick="selectFormat(this, 'image/jpeg', 'JPG')">JPG</div>
+                    <div class="format-opt" onclick="selectFormat(this, 'image/webp', 'WEBP')">WEBP</div>
+                    <div class="format-opt" onclick="selectFormat(this, 'image/bmp', 'BMP')">BMP</div>
+                    <div class="format-opt" onclick="selectFormat(this, 'base64', 'BASE64')">Base64</div>
+                </div>
+
+                <div id="upload-stage" class="upload-area">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <div class="upload-title">Carica Immagine</div>
+                    <div class="upload-desc">Supporta tutti i formati immagine</div>
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                </div>
+            </div>
+
+            <!-- RESULT AREA -->
+            <div id="result-area" class="glass-card hidden" style="padding: 24px; margin-top: 24px; text-align: center;">
+                <h3 id="result-title" style="margin-bottom: 20px;">Conversione completata!</h3>
+                
+                <!-- Preview for Image formats -->
+                <div id="img-preview-container" class="canvas-wrapper" style="margin-bottom: 20px; max-height: 400px;">
+                    <img id="result-img" style="max-width: 100%; object-fit: contain;">
+                </div>
+
+                <!-- Textarea for Base64 -->
+                <div id="base64-container" class="hidden">
+                    <textarea id="base64-output" class="output-box" readonly></textarea>
+                    <button class="alert-btn" onclick="copyBase64()">Copia Stringa</button>
+                </div>
+
+                <div class="action-row" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                    <button id="btn-download" class="alert-btn primary" style="min-width: 200px;">Scarica File</button>
+                    <button class="alert-btn" onclick="location.reload()">Nuova</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/ui.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script>
+        let targetMime = 'image/png';
+        let targetExt = 'PNG';
+        let originalImage = null;
+        
+        function selectFormat(el, mime, ext) {
+            targetMime = mime;
+            targetExt = ext;
+            document.querySelectorAll('.format-opt').forEach(elm => elm.classList.remove('active'));
+            if (el && el.classList) el.classList.add('active');
+            // If image already loaded, re-render the result in the new format
+            if (originalImage) renderResult();
+        }
+
+        const uploadArea = document.getElementById('upload-stage');
+        const fileInput = document.getElementById('file-input');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if(!e.target.files.length) return;
+            const file = e.target.files[0];
+            processFile(file);
+        });
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Store original image for future re-rendering
+                    originalImage = img;
+
+                    // Show Result Area but keep the format selector visible so user can change it after upload
+                    // Only hide the single upload area element, not the whole card
+                    uploadArea.style.display = 'none';
+                    document.getElementById('result-area').classList.remove('hidden');
+
+                    // Render result based on current selected format
+                    renderResult();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderResult() {
+            if (!originalImage) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = originalImage.width;
+            canvas.height = originalImage.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(originalImage, 0, 0);
+
+            if (targetMime === 'base64') {
+                const dataUrl = canvas.toDataURL('image/png'); // internal default
+                document.getElementById('img-preview-container').classList.add('hidden');
+                document.getElementById('base64-container').classList.remove('hidden');
+                document.getElementById('base64-output').value = dataUrl;
+                document.getElementById('btn-download').style.display = 'none';
+            } else {
+                const dataUrl = canvas.toDataURL(targetMime, 0.9);
+                document.getElementById('img-preview-container').classList.remove('hidden');
+                document.getElementById('base64-container').classList.add('hidden');
+
+                const resImg = document.getElementById('result-img');
+                resImg.src = dataUrl;
+
+                const btnDown = document.getElementById('btn-download');
+                btnDown.style.display = 'inline-block';
+                btnDown.textContent = `Scarica .${targetExt}`;
+                btnDown.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = dataUrl;
+                    a.download = `converted.${targetExt.toLowerCase()}`;
+                    a.click();
+                };
+            }
+        }
+
+        function copyBase64() {
+            const copyText = document.getElementById("base64-output");
+            copyText.select();
+            document.execCommand("copy");
+            UI.showAlert('Copiato!', 'Stringa copiata negli appunti.');
+        }
+    </script>
+</body>
+</html>

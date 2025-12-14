@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Filtri Foto - CronoTools</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .filter-control { background: var(--bg-tertiary); padding: 12px; border-radius: 12px; }
+        .filter-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .filter-slider { width: 100%; -webkit-appearance: none; height: 4px; background: var(--separator); border-radius: 2px; outline: none; }
+        .filter-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; border: 2px solid var(--bg-secondary); }
+    </style>
+</head>
+<body>
+    <crono-navbar></crono-navbar>
+
+    <div class="content-wrapper">
+        <header class="main-header">
+            <h1>Filtri & Effetti</h1>
+            <p class="description">Regola luci, colori e dettagli per dare vita alle tue foto.</p>
+        </header>
+
+        <main>
+            <div id="upload-stage" class="upload-area">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83m13.79-4l-5.74 9.94"></path></svg>
+                <div class="upload-title">Carica foto</div>
+                <input type="file" id="file-input" accept="image/*" hidden>
+            </div>
+
+            <div id="workspace-stage" class="workspace-container">
+                <div class="canvas-wrapper">
+                    <canvas id="editor-canvas"></canvas>
+                </div>
+
+                <div class="glass-card" style="padding: 20px;">
+                    <div class="filters-grid">
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Luminosità</span> <span id="val-brightness">100%</span></div>
+                            <input type="range" class="filter-slider" id="brightness" min="0" max="200" value="100" data-default="100">
+                        </div>
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Contrasto</span> <span id="val-contrast">100%</span></div>
+                            <input type="range" class="filter-slider" id="contrast" min="0" max="200" value="100" data-default="100">
+                        </div>
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Saturazione</span> <span id="val-saturate">100%</span></div>
+                            <input type="range" class="filter-slider" id="saturate" min="0" max="200" value="100" data-default="100">
+                        </div>
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Seppia</span> <span id="val-sepia">0%</span></div>
+                            <input type="range" class="filter-slider" id="sepia" min="0" max="100" value="0" data-default="0">
+                        </div>
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Grigi</span> <span id="val-grayscale">0%</span></div>
+                            <input type="range" class="filter-slider" id="grayscale" min="0" max="100" value="0" data-default="0">
+                        </div>
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Sfocatura</span> <span id="val-blur">0px</span></div>
+                            <input type="range" class="filter-slider" id="blur" min="0" max="10" value="0" step="0.5" data-default="0">
+                        </div>
+                        <div class="filter-control">
+                            <div class="filter-label"><span>Tonalità</span> <span id="val-hue">0°</span></div>
+                            <input type="range" class="filter-slider" id="hue" min="0" max="360" value="0" data-default="0">
+                        </div>
+                    </div>
+                    
+                    <button id="btn-apply" class="alert-btn" style="width: 100%; margin-bottom: 10px;">Applica Modifiche</button>
+                </div>
+
+                <div class="toolbar-floating">
+                    <button class="tool-btn" id="btn-undo" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+                        Undo
+                    </button>
+                    <button class="tool-btn danger" id="btn-reset">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Esci
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="btn-download" class="alert-btn primary" style="padding: 16px 32px; font-size: 18px; width: 100%; max-width: 300px;">Scarica</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/ui.js"></script>
+    <script src="../js/core.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const engine = new CronoEngine('editor-canvas');
+            const uploadArea = document.getElementById('upload-stage');
+            const fileInput = document.getElementById('file-input');
+            const workspace = document.getElementById('workspace-stage');
+            
+            // Reference to base image for non-destructive preview
+            let baseImageState = null; 
+
+            // Slider elements
+            const sliders = {
+                brightness: document.getElementById('brightness'),
+                contrast: document.getElementById('contrast'),
+                saturate: document.getElementById('saturate'),
+                sepia: document.getElementById('sepia'),
+                grayscale: document.getElementById('grayscale'),
+                blur: document.getElementById('blur'),
+                hue: document.getElementById('hue')
+            };
+
+            // Handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) engine.loadImage(e.target.files[0]);
+            });
+
+            engine.on('imageLoaded', () => {
+                uploadArea.style.display = 'none';
+                workspace.style.display = 'block';
+                // Salva lo stato iniziale come base per i filtri
+                baseImageState = engine.currentImage;
+            });
+
+            engine.on('historyChange', ({ canUndo }) => {
+                document.getElementById('btn-undo').disabled = !canUndo;
+            });
+            
+            document.getElementById('btn-undo').addEventListener('click', () => {
+                engine.undo();
+                // Dopo un undo, l'immagine corrente diventa la nuova base per i filtri
+                baseImageState = engine.currentImage;
+                resetSliders(); // Reset sliders visivi
+            });
+
+            function resetSliders() {
+                Object.keys(sliders).forEach(key => {
+                    const slider = sliders[key];
+                    const def = slider.dataset.default;
+                    slider.value = def;
+                    const suffix = key === 'blur' ? 'px' : (key === 'hue' ? '°' : '%');
+                    document.getElementById(`val-${key}`).textContent = `${def}${suffix}`;
+                });
+            }
+
+            // Live Preview Logic
+            Object.keys(sliders).forEach(key => {
+                sliders[key].addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    const suffix = key === 'blur' ? 'px' : (key === 'hue' ? '°' : '%');
+                    document.getElementById(`val-${key}`).textContent = `${val}${suffix}`;
+                    
+                    const values = {};
+                    Object.keys(sliders).forEach(k => values[k] = sliders[k].value);
+                    
+                    // IMPORTANTE: Resetta engine.currentImage allo stato base PRIMA di applicare
+                    // Questo evita che i filtri si sommino ad ogni pixel di trascinamento dello slider
+                    if(baseImageState) {
+                        engine.currentImage = baseImageState; 
+                        
+                        // Applica filtri su una copia temporanea (canvas)
+                        const previewCanvas = engine.applyFilters(values);
+                        
+                        // Imposta il risultato come immagine corrente SOLO per il rendering,
+                        // ma NON aggiorniamo baseImageState finché non si fa "Applica"
+                        engine.currentImage = previewCanvas; 
+                        engine.render(); 
+                        
+                        // Ripristina l'immagine corrente "logica" a baseImageState in modo che 
+                        // operazioni future dell'engine non lavorino sull'anteprima volatile,
+                        // MA per ora lasciamo quella visualizzata così l'utente vede l'effetto.
+                        // Il trucco è che engine.currentImage è ciò che viene disegnato.
+                    }
+                });
+            });
+
+            // Commit (Save to history)
+            document.getElementById('btn-apply').addEventListener('click', () => {
+                // Consolida l'anteprima attuale come nuova base
+                engine.pushHistory(); // Salva lo stato attuale nella history (per Undo)
+                baseImageState = engine.currentImage; // Aggiorna la base per i prossimi filtri
+                
+                resetSliders(); // Resetta sliders a zero/default
+                UI.showAlert('Applicato', 'Filtri salvati. Puoi applicarne altri.');
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => window.location.reload());
+            document.getElementById('btn-download').addEventListener('click', async () => {
+                const blob = await engine.export('png');
+                engine.download(blob, 'crono-filtri.png');
+            });
+        });
+    </script>
+</body>
+</html>

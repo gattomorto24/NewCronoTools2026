@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Ridimensiona Immagini - CronoTools</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .input-group { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 10px; }
+        .size-input { 
+            background: var(--bg-tertiary); border: 1px solid var(--separator); 
+            color: var(--text-primary); padding: 12px; border-radius: 12px; 
+            width: 100px; text-align: center; font-size: 16px; font-weight: 600;
+        }
+        .lock-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: 8px; }
+        .lock-btn.active { color: var(--accent); background: var(--accent-dim); }
+        .dimensions-display { 
+            background: var(--bg-glass-heavy); padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <crono-navbar></crono-navbar>
+
+    <div class="content-wrapper">
+        <header class="main-header">
+            <h1>Ridimensiona</h1>
+            <p class="description">Cambia le dimensioni delle tue immagini in pixel o percentuale mantenendo la qualità.</p>
+        </header>
+
+        <main>
+            <div id="upload-stage" class="upload-area">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                <div class="upload-title">Carica immagine</div>
+                <div class="upload-desc">JPG, PNG, WEBP</div>
+                <input type="file" id="file-input" accept="image/*" hidden>
+            </div>
+
+            <div id="workspace-stage" class="workspace-container">
+                <div style="text-align: center;">
+                    <div class="dimensions-display">Originale: <span id="dims-orig">-</span> | Attuale: <span id="dims-curr">-</span></div>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="editor-canvas"></canvas>
+                </div>
+
+                <!-- Resize Controls -->
+                <div class="glass-card" style="padding: 20px; margin: 0 auto; max-width: 400px; text-align: center;">
+                    <div class="input-group">
+                        <div style="text-align: left;">
+                            <label style="font-size: 12px; margin-left: 4px; color: var(--text-secondary);">Larghezza</label>
+                            <input type="number" id="input-w" class="size-input" placeholder="W">
+                        </div>
+                        
+                        <button id="btn-lock" class="lock-btn active" title="Blocca proporzioni" style="margin-top: 20px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </button>
+
+                        <div style="text-align: left;">
+                            <label style="font-size: 12px; margin-left: 4px; color: var(--text-secondary);">Altezza</label>
+                            <input type="number" id="input-h" class="size-input" placeholder="H">
+                        </div>
+                    </div>
+                    
+                    <button id="btn-apply" class="alert-btn primary" style="width: 100%; margin-top: 10px;">Applica Ridimensionamento</button>
+                </div>
+
+                <div class="toolbar-floating">
+                    <button class="tool-btn" id="btn-undo" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+                        Undo
+                    </button>
+                    <button class="tool-btn danger" id="btn-reset">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Esci
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="btn-download" class="alert-btn primary" style="padding: 16px 32px; font-size: 18px; width: 100%; max-width: 300px;">Scarica</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/ui.js"></script>
+    <script src="../js/core.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const engine = new CronoEngine('editor-canvas');
+            const uploadArea = document.getElementById('upload-stage');
+            const fileInput = document.getElementById('file-input');
+            const workspace = document.getElementById('workspace-stage');
+            
+            const inputW = document.getElementById('input-w');
+            const inputH = document.getElementById('input-h');
+            const btnLock = document.getElementById('btn-lock');
+            let aspectRatio = 1;
+            let locked = true;
+
+            // Handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) engine.loadImage(e.target.files[0]);
+            });
+
+            engine.on('imageLoaded', (dims) => {
+                uploadArea.style.display = 'none';
+                workspace.style.display = 'block';
+                updateDims(dims.width, dims.height);
+                document.getElementById('dims-orig').textContent = `${dims.width} x ${dims.height}`;
+            });
+
+            engine.on('render', (dims) => updateDims(dims.width, dims.height));
+            engine.on('historyChange', ({ canUndo }) => document.getElementById('btn-undo').disabled = !canUndo);
+            document.getElementById('btn-undo').addEventListener('click', () => engine.undo());
+
+            function updateDims(w, h) {
+                inputW.value = Math.round(w);
+                inputH.value = Math.round(h);
+                document.getElementById('dims-curr').textContent = `${Math.round(w)} x ${Math.round(h)}`;
+                aspectRatio = w / h;
+            }
+
+            // Aspect Ratio Logic
+            btnLock.addEventListener('click', () => {
+                locked = !locked;
+                btnLock.classList.toggle('active', locked);
+                btnLock.querySelector('svg').innerHTML = locked 
+                    ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>'
+                    : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path><line x1="2" y1="2" x2="22" y2="22"></line>';
+            });
+
+            inputW.addEventListener('input', () => {
+                if (locked && inputW.value) inputH.value = Math.round(inputW.value / aspectRatio);
+            });
+            inputH.addEventListener('input', () => {
+                if (locked && inputH.value) inputW.value = Math.round(inputH.value * aspectRatio);
+            });
+
+            document.getElementById('btn-apply').addEventListener('click', () => {
+                engine.resize(parseInt(inputW.value), parseInt(inputH.value));
+            });
+            
+            document.getElementById('btn-reset').addEventListener('click', () => window.location.reload());
+            document.getElementById('btn-download').addEventListener('click', async () => {
+                const blob = await engine.export('png');
+                engine.download(blob, 'crono-resize.png');
+            });
+        });
+    </script>
+</body>
+</html>
